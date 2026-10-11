@@ -13,12 +13,16 @@ function api(path, options = {}) {
 }
 
 function Login({ onLogin }) {
+  const [mode, setMode] = useState('login') // 'login' or 'register'
+  const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [message, setMessage] = useState('')
 
   async function handleLogin() {
     setError('')
+    setMessage('')
     const res = await fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -33,15 +37,47 @@ function Login({ onLogin }) {
     onLogin()
   }
 
+  async function handleRegister() {
+    setError('')
+    setMessage('')
+    const res = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, password })
+    })
+    if (!res.ok) {
+      setError('Registration failed. The email may already be used, or the password is under 6 characters.')
+      return
+    }
+    setMessage('Account created. Please log in.')
+    setMode('login')
+    setPassword('')
+  }
+
   return (
     <div style={{ maxWidth: 320, margin: '60px auto', display: 'grid', gap: 10 }}>
       <h2>Smart Attendance Tracker</h2>
+      <h3>{mode === 'login' ? 'Login' : 'Create account'}</h3>
+
+      {mode === 'register' && (
+        <input placeholder="Name" value={name}
+               onChange={e => setName(e.target.value)} />
+      )}
       <input placeholder="Email" value={email}
              onChange={e => setEmail(e.target.value)} />
       <input placeholder="Password" type="password" value={password}
              onChange={e => setPassword(e.target.value)} />
-      <button onClick={handleLogin}>Login</button>
+
+      <button onClick={mode === 'login' ? handleLogin : handleRegister}>
+        {mode === 'login' ? 'Login' : 'Register'}
+      </button>
+
       {error && <p style={{ color: 'red' }}>{error}</p>}
+      {message && <p style={{ color: 'green' }}>{message}</p>}
+
+      <button onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); setError(''); setMessage('') }}>
+        {mode === 'login' ? 'New here? Create an account' : 'Already have an account? Login'}
+      </button>
     </div>
   )
 }
@@ -50,6 +86,7 @@ function Dashboard({ onLogout }) {
   const [subjects, setSubjects] = useState([])
   const [summaries, setSummaries] = useState({})
   const [newName, setNewName] = useState('')
+  const [addError, setAddError] = useState('')
 
   async function load() {
     const res = await api('/api/subjects')
@@ -68,15 +105,19 @@ function Dashboard({ onLogout }) {
   useEffect(() => { load() }, [])
 
   async function addSubject() {
-    if (!newName.trim()) return
-    await api('/api/subjects', {
-      method: 'POST',
-      body: JSON.stringify({ name: newName.trim() })
-    })
-    setNewName('')
-    load()
+  setAddError('')
+  if (!newName.trim()) return
+  const res = await api('/api/subjects', {
+    method: 'POST',
+    body: JSON.stringify({ name: newName.trim() })
+  })
+  if (!res.ok) {
+    setAddError('Could not add subject. Status: ' + res.status)
+    return
   }
-
+  setNewName('')
+  load()
+}
   async function mark(id, present) {
     await api(`/api/attendance/${id}?present=${present}`, { method: 'POST' })
     load()
@@ -94,6 +135,7 @@ function Dashboard({ onLogout }) {
                onChange={e => setNewName(e.target.value)} />
         <button onClick={addSubject}>Add subject</button>
       </div>
+      {addError && <p style={{ color: 'red' }}>{addError}</p>}
 
       {subjects.length === 0 && <p>No subjects yet. Add one above.</p>}
 
