@@ -2,6 +2,7 @@ package com.college.attendance_tracker.controller;
 
 import com.college.attendance_tracker.dto.AttendanceSummary;
 import com.college.attendance_tracker.service.AttendanceService;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -15,7 +16,7 @@ public class SummaryController {
     }
 
     @GetMapping("/{id}/summary")
-    public AttendanceSummary getSummary(@PathVariable Long id) {
-        return service.getSummary(id);
+    public AttendanceSummary getSummary(@PathVariable Long id, Authentication auth) {
+        return service.getSummary(id, auth.getName());
     }
 }

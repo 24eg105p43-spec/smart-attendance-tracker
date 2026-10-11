@@ -4,7 +4,10 @@ import com.college.attendance_tracker.model.Attendance;
 import com.college.attendance_tracker.model.Subject;
 import com.college.attendance_tracker.repository.AttendanceRepository;
 import com.college.attendance_tracker.repository.SubjectRepository;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 
@@ -24,9 +27,10 @@ public class AttendanceController {
     @PostMapping("/{subjectId}")
     public Attendance markAttendance(@PathVariable Long subjectId,
                                      @RequestParam boolean present,
-                                     @RequestParam(required = false) String date) {
-        Subject subject = subjectRepository.findById(subjectId)
-                .orElseThrow(() -> new RuntimeException("Subject not found"));
+                                     @RequestParam(required = false) String date,
+                                     Authentication auth) {
+        Subject subject = subjectRepository.findByIdAndOwnerEmail(subjectId, auth.getName())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Subject not found"));
 
         Attendance record = new Attendance();
         record.setSubject(subject);

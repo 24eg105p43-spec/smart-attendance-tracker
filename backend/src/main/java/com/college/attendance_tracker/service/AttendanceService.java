@@ -5,7 +5,9 @@ import com.college.attendance_tracker.model.Attendance;
 import com.college.attendance_tracker.model.Subject;
 import com.college.attendance_tracker.repository.AttendanceRepository;
 import com.college.attendance_tracker.repository.SubjectRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -21,9 +23,9 @@ public class AttendanceService {
         this.subjectRepository = subjectRepository;
     }
 
-    public AttendanceSummary getSummary(Long subjectId) {
-        Subject subject = subjectRepository.findById(subjectId)
-                .orElseThrow(() -> new RuntimeException("Subject not found"));
+    public AttendanceSummary getSummary(Long subjectId, String email) {
+        Subject subject = subjectRepository.findByIdAndOwnerEmail(subjectId, email)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Subject not found"));
 
         List<Attendance> records = attendanceRepository.findBySubjectId(subjectId);
         int total = records.size();
@@ -36,15 +38,12 @@ public class AttendanceService {
     public static AttendanceSummary calculate(String name, int attended, int total, int min) {
         double percentage = total == 0 ? 0 : Math.round(attended * 10000.0 / total) / 100.0;
 
-        // Most classes you can still miss: attended / (total + x) >= min/100
         int canSkip = Math.max(0, (attended * 100) / min - total);
 
-        // Classes to attend in a row to get back to min:
-        // (attended + y) / (total + y) >= min/100
         int needToAttend = 0;
         if (attended * 100 < min * total) {
             needToAttend = (min >= 100)
-                    ? -1  // impossible to recover at 100%
+                    ? -1
                     : Math.ceilDiv(min * total - 100 * attended, 100 - min);
         }
 
