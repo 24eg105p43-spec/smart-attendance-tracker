@@ -18,6 +18,10 @@ public class Subject {
     @JsonIgnore
     private User owner;
 
+    @OneToMany(mappedBy = "subject", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
+    private java.util.List<Attendance> attendances;
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 

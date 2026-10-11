@@ -36,4 +36,12 @@ public class SubjectController {
     public List<Subject> getMySubjects(Authentication auth) {
         return repository.findByOwnerEmail(auth.getName());
     }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteSubject(@PathVariable Long id, Authentication auth) {
+        Subject subject = repository.findByIdAndOwnerEmail(id, auth.getName())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Subject not found"));
+        repository.delete(subject);
+    }
 }
